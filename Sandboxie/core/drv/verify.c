@@ -221,10 +221,41 @@ NTSTATUS KphVerifySignature(
     _In_ PUCHAR Signature,
     _In_ ULONG SignatureSize
     )
-{
-	return STATUS_SUCCESS;
-}
+{	
+    NTSTATUS status;
+    BCRYPT_ALG_HANDLE signAlgHandle = NULL;
+    BCRYPT_KEY_HANDLE keyHandle = NULL;
+    PVOID hash = NULL;
+    ULONG hashSize;
 
+    // Import the trusted public key.
+
+    if (!NT_SUCCESS(status = BCryptOpenAlgorithmProvider(&signAlgHandle, KPH_SIGN_ALGORITHM, NULL, 0)))
+        goto CleanupExit;
+    if (!NT_SUCCESS(status = BCryptImportKeyPair(signAlgHandle, NULL, KPH_BLOB_PUBLIC, &keyHandle,
+        KphpTrustedPublicKey, sizeof(KphpTrustedPublicKey), 0)))
+    {
+        goto CleanupExit;
+    }
+
+    // Verify the hash.
+
+    if (!NT_SUCCESS(status = BCryptVerifySignature(keyHandle, NULL, Hash, HashSize, Signature,
+        SignatureSize, 0)))
+    {
+        goto CleanupExit;
+    }
+
+    status = STATUS_SUCCESS;
+
+CleanupExit:
+    if (keyHandle)
+        BCryptDestroyKey(keyHandle);
+    if (signAlgHandle)
+        BCryptCloseAlgorithmProvider(signAlgHandle, 0);
+
+    return status;
+}
 
 NTSTATUS KphVerifyFile(
     _In_ PUNICODE_STRING FileName,
