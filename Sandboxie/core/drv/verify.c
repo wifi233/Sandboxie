@@ -225,6 +225,7 @@ NTSTATUS KphVerifySignature(
 	return STATUS_SUCCESS;
 }
 
+
 NTSTATUS KphVerifyFile(
     _In_ PUNICODE_STRING FileName,
     _In_ PUCHAR Signature,
